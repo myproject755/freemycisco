@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#FREEMYCISCO // LIBERACIÓN CYBERPUNK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --panel-bg: rgba(15, 18, 37, 0.88);
+      --border-color: rgba(0, 243, 255, 0.35);
+      --neon-cyan: #00f3ff;
+      --neon-magenta: #ff0055;
+      --neon-yellow: #ffe600;
+      --neon-green: #00ff66;
+      --text-main: #d0f0ff;
+      --text-dim: #7a8b9e;
+      --font-heading: 'Orbitron', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Screen shake effect on bomb hit */
+    body.shake {
+      animation: shakeAnim 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shakeAnim {
+      10%, 90% { transform: translate3d(-3px, 2px, 0); }
+      20%, 80% { transform: translate3d(4px, -3px, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 5px, 0); }
+      40%, 60% { transform: translate3d(6px, -4px, 0); }
+    }
+
+    .bg-grid {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: 
+        linear-gradient(to right, rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: -2;
+    }
+
+    #matrix-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%);
+      background-size: 100% 4px;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 2rem 1.2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .title-glitch {
+      font-family: var(--font-heading);
+      font-size: clamp(2.5rem, 8vw, 4.8rem);
+      font-weight: 900;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      text-shadow: 
+        0 0 10px var(--neon-cyan),
+        0 0 20px var(--neon-cyan),
+        0 0 40px var(--neon-cyan);
+      letter-spacing: 2px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .subtitle {
+      color: var(--neon-magenta);
+      font-size: 0.95rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 0.6rem;
+      font-weight: 600;
+      text-shadow: 0 0 8px var(--neon-magenta);
+    }
+
+    .grid-dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.08);
+      backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      color: var(--neon-yellow);
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stats-list { list-style: none; }
+
+    .stats-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.55rem 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+      font-size: 0.88rem;
+    }
+
+    .stats-label { color: var(--text-dim); }
+    .stats-val { color: var(--neon-cyan); font-weight: bold; text-align: right; }
+    .stats-val.highlight { color: var(--neon-magenta); }
+    .stats-val.green { color: var(--neon-green); }
+
+    .bio-text {
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: var(--text-main);
+    }
+
+    .bio-text strong { color: var(--neon-cyan); }
+    .bio-text em { color: var(--neon-yellow); font-style: normal; font-weight: 600; }
+
+    .quote-box {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: rgba(255, 0, 85, 0.12);
+      border-left: 3px solid var(--neon-magenta);
+      font-style: italic;
+      font-size: 0.85rem;
+      color: #ffb8d0;
+    }
+
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .cyber-btn {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 0.85rem 1.2rem;
+      font-family: var(--font-heading);
+      font-size: 0.88rem;
+      cursor: pointer;
+      border-radius: 4px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+      user-select: none;
+    }
+
+    .cyber-btn:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 20px var(--neon-cyan);
+    }
+
+    .cyber-btn.magenta {
+      border-color: var(--neon-magenta);
+      color: var(--neon-magenta);
+    }
+
+    .cyber-btn.magenta:hover {
+      background: var(--neon-magenta);
+      color: #fff;
+      box-shadow: 0 0 20px var(--neon-magenta);
+    }
+
+    .cyber-btn.yellow {
+      border-color: var(--neon-yellow);
+      color: var(--neon-yellow);
+    }
+
+    .cyber-btn.yellow:hover {
+      background: var(--neon-yellow);
+      color: #000;
+      box-shadow: 0 0 20px var(--neon-yellow);
+    }
+
+    .counter-number {
+      font-family: var(--font-heading);
+      font-size: 2.8rem;
+      color: var(--neon-magenta);
+      text-align: center;
+      margin: 0.5rem 0;
+      text-shadow: 0 0 15px var(--neon-magenta);
+    }
+
+    /* GAME SECTION STYLES */
+    .game-card {
+      grid-column: 1 / -1;
+      text-align: center;
+    }
+
+    #game-canvas {
+      background: #000;
+      border: 2px solid var(--neon-cyan);
+      border-radius: 6px;
+      margin: 1rem auto;
+      display: block;
+      max-width: 100%;
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.25);
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    .game-stats-hud {
+      display: flex;
+      justify-content: space-around;
+      max-width: 600px;
+      margin: 0.5rem auto 1rem;
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      background: rgba(0,0,0,0.5);
+      padding: 0.6rem;
+      border-radius: 4px;
+      border: 1px solid rgba(0,243,255,0.2);
+    }
+
+    .hud-item { display: flex; align-items: center; gap: 0.4rem; }
+
+    /* TERMINAL STYLES */
+    .terminal-card {
+      grid-column: 1 / -1;
+      background: rgba(5, 7, 15, 0.95);
+      border-color: var(--neon-cyan);
+    }
+
+    .terminal-body {
+      height: 190px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      color: var(--neon-green);
+      margin-bottom: 1rem;
+      padding-right: 0.5rem;
+    }
+
+    .terminal-line { margin-bottom: 0.35rem; word-break: break-word; }
+    .terminal-line.cmd { color: var(--neon-cyan); }
+    .terminal-line.err { color: var(--neon-magenta); }
+
+    #particle-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* MODAL STYLES */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-card {
+      background: var(--bg-dark);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 520px;
+      width: 90%;
+      box-shadow: 0 0 35px var(--neon-cyan);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .modal-card h3 {
+      font-family: var(--font-heading);
+      color: var(--neon-yellow);
+      margin-bottom: 1rem;
+    }
+
+    .modal-card ol {
+      margin-left: 1.2rem;
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .modal-card li { margin-bottom: 0.8rem; }
+
+    footer {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      padding: 1.5rem 0 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <canvas id="matrix-canvas"></canvas>
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="title-glitch">#FREEMYCISCO</div>
+      <div class="subtitle">Sotillo Legend // VIP Central // Class of 2007</div>
+    </header>
+
+    <!-- Top Action Buttons -->
+    <div class="actions-grid">
+      <button class="cyber-btn magenta" id="btn-sign">⚡ Firmar Petición</button>
+      <button class="cyber-btn" id="btn-sound">🔊 Sonido Synth</button>
+      <button class="cyber-btn yellow" id="btn-nfc">📱 Configurar en NFC</button>
+    </div>
+
+    <div class="grid-dashboard">
+      
+      <!-- Card 1: Dossier -->
+      <div class="card">
+        <div>
+          <div class="card-title">📂 ARCHIVO // EXPEDIENTE CISCO</div>
+          <div class="bio-text">
+            Nacido en <strong>2007</strong>, un chaval con un futuro brillante por delante, inteligente y guapo (al menos lo intenta el chaval). Lo da absolutamente todo por los suyos sin pensarlo dos veces.
+          </div>
+        </div>
+        <div class="quote-box">
+          "Un chaval inteligente, guapo (al menos lo intenta) y lo da todo por los suyos."
+        </div>
+      </div>
+
+      <!-- Card 2: CD Sotillo Career -->
+      <div class="card">
+        <div>
+          <div class="card-title">⚽ CD SOTILLO // MÉTRICAS DE LEYENDA</div>
+          <ul class="stats-list">
+            <li class="stats-item">
+              <span class="stats-label">Trayectoria:</span>
+              <span class="stats-val">Portero durante muchos años</span>
+            </li>
+            <li class="stats-item">
+              <span class="stats-label">Rendimiento:</span>
+              <span class="stats-val">Paradas buenas, partidos malos</span>
+            </li>
+            <li class="stats-item">
+              <span class="stats-label">Balance General:</span>
+              <span class="stats-val highlight">Muchas victorias pero más derrotas</span>
+            </li>
+            <li class="stats-item">
+              <span class="stats-label">Porterías a 0:</span>
+              <span class="stats-val highlight">0 (Hecho histórico para su carrera)</span>
+            </li>
+            <li class="stats-item">
+              <span class="stats-label">Modo Pistas:</span>
+              <span class="stats-val green">Se convierte en Ferran</span>
+            </li>
+          </ul>
+        </div>
+        <div class="quote-box">
+          "0 porterías a 0 en su carrera: un hito inolvidable e irrepetible."
+        </div>
+      </div>
+
+      <!-- Card 3: Teleco & Cervezas -->
+      <div class="card">
+        <div>
+          <div class="card-title">🎓 TELECO VS CERVEZAS</div>
+          <div class="bio-text">
+            Ingeniero de <strong>Teleco</strong> (o eso dice él). 
+            <br><br>
+            Su expediente académico registra una estadística demoledora: ha pisado <em>menos clases este año que cervezas se bebe un lunes cualquiera</em>.
+          </div>
+        </div>
+        <div class="quote-box">
+          "Menos clases al año que cervezas en un solo lunes."
+        </div>
+      </div>
+
+      <!-- Card 4: VIP Central el Fiero -->
+      <div class="card">
+        <div>
+          <div class="card-title">🍻 VIP CENTRAL // EL FIERO</div>
+          <div class="bio-text">
+            Estatus exclusivo de <strong>VIP de La Central el Fiero</strong>. Les ha vomitado dentro y aun así no le han echado todavía.
+            <br><br>
+            Le ponen la canción <em>"La Ventanita"</em> cuando le ven llegar y le sirven los cubatas bien cargados para irse contento a casa. Ofertas le deberían dar por tantos días idos.
+          </div>
+        </div>
+        <div class="quote-box">
+          "El día de su boda ya sabemos perfectamente dónde ir a buscarle."
+        </div>
+      </div>
+
+      <!-- Card 5: Counter -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-title" style="justify-content: center;">🚀 APOYOS PARA LA LIBERACIÓN DE CISCO</div>
+        <div class="counter-number" id="sign-counter">1,337</div>
+        <p style="text-align: center; color: var(--text-dim); font-size: 0.88rem;">Firmas digitales enviadas para conseguir la libertad de Cisco.</p>
+      </div>
+
+      <div class="card game-card">
+        <div class="card-title" style="justify-content: center;">🎮 MINIJUEGO: CISCO GOALKEEPER (FIERO EDITION)</div>
+        <p style="font-size: 0.85rem; color: var(--text-dim);">
+          Mueve el banner neón <strong>'CISCO'</strong> con ⬅️️ ➡️ / A / D o arrastrando con el dedo/ratón.
+          <br>Recoge 🍺 <strong>Cervezas (+20 Pts)</strong> y esquiva 💣 <strong>Bombas (-30 Pts y explosión)</strong>.
+        </p>
+
+        <div class="game-stats-hud">
+          <div class="hud-item">⭐ Puntos: <span id="hud-score" style="color:var(--neon-yellow);">0</span></div>
+          <div class="hud-item">🍺 Cervezas: <span id="hud-beers" style="color:var(--neon-green);">0</span></div>
+          <div class="hud-item">💣 Bombas Esquivadas: <span id="hud-bombs" style="color:var(--neon-magenta);">0</span></div>
+        </div>
+
+        <canvas id="game-canvas" width="600" height="260"></canvas>
+        <button class="cyber-btn yellow" id="btn-start-game" style="margin: 0 auto;">▶️ Iniciar / Reiniciar Juego</button>
+      </div>
+
+      <div class="card terminal-card">
+        <div class="card-title">💻 CONSOLA INTERACTIVA // CISCO-OS v2.0</div>
+        <div class="terminal-body" id="term-body">
+          <div class="terminal-line">[SYSTEM OK] Consola lista.</div>
+          <div class="terminal-line">Escribe <span style="color:var(--neon-yellow)">'help'</span> para consultar los comandos.</div>
+        </div>
+        <div class="terminal-input-wrap" style="display:flex; gap:0.5rem; background:rgba(0,0,0,0.5); padding:0.5rem; border-radius:4px; border:1px solid rgba(0,243,255,0.3);">
+          <span style="color:var(--neon-magenta); font-weight:bold;">user@cisco-net:~$</span>
+          <input type="text" id="term-input" style="background:transparent; border:none; outline:none; color:#fff; font-family:var(--font-mono); width:100%; font-size:0.9rem;" placeholder="Escribe cisco, fiero, sotillo, teleco, ferran, boda..." autocomplete="off">
+        </div>
+      </div>
+
+    </div>
+
+    <footer>
+      #FREEMYCISCO // Sistema Web Cyberpunk Optimizado para NFC
+    </footer>
+  </div>
+
+  <!-- NFC Modal Guide -->
+  <div class="modal-overlay" id="nfc-modal">
+    <div class="modal-card">
+      <h3>📱 Instrucciones para Grabar en NFC</h3>
+      <p style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 1rem;">Graba esta página web directamente en tu tarjeta o pegatina NFC:</p>
+      <ol>
+        <li>Descarga la app gratuita <strong>NFC Tools</strong> (iOS / Android).</li>
+        <li>Abre la aplicación y pulsa en la pestaña <strong>Escribir (Write)</strong>.</li>
+        <li>Presiona en <strong>Añadir un registro</strong> y escoge <strong>URL / URI</strong>.</li>
+        <li>Pega la dirección URL donde está publicada esta página.</li>
+        <li>Toca en <strong>Escribir</strong> y aproxima tu tarjeta o pegatina NFC a la parte posterior del teléfono.</li>
+        <li>¡Listo! Al acercar cualquier móvil a la pegatina se abrirá la web de Cisco.</li>
+      </ol>
+      <button class="cyber-btn magenta" id="btn-close-nfc" style="margin-top: 1.5rem; width: 100%;">Entendido</button>
+    </div>
+  </div>
+
+  <script>
+    const mCanvas = document.getElementById('matrix-canvas');
+    const mCtx = mCanvas.getContext('2d');
+
+    function resizeMatrix() {
+      mCanvas.width = window.innerWidth;
+      mCanvas.height = window.innerHeight;
+    }
+    resizeMatrix();
+    window.addEventListener('resize', resizeMatrix);
+
+    const chars = 'CISCO2007SOTILLOFIEROFERRAN0101TELECOVENTANITABOMBA';
+    const fontSize = 14;
+    let columns = Math.floor(mCanvas.width / fontSize);
+    let drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      mCtx.fillStyle = 'rgba(7, 9, 19, 0.1)';
+      mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+
+      mCtx.fillStyle = '#00f3ff';
+      mCtx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars.charAt(Math.floor(Math.random() * chars.length));
+        mCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > mCanvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 40);
+
+    let audioCtx = null;
+
+    function playSynthSound(type = 'beep') {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'beer') {
+          // Gulp / happy chime
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'bomb') {
+          // Explosion noise synth
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.linearRampToValueAtTime(40, now + 0.3);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'fanfare') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(261.63, now);
+          osc.frequency.setValueAtTime(329.63, now + 0.1);
+          osc.frequency.setValueAtTime(392.00, now + 0.2);
+          osc.frequency.setValueAtTime(523.25, now + 0.3);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        }
+      } catch (e) {
+        console.log("Audio no activado aún");
+      }
+    }
+
+    document.getElementById('btn-sound').addEventListener('click', () => {
+      playSynthSound('fanfare');
+    });
+
+    const pCanvas = document.getElementById('particle-canvas');
+    const pCtx = pCanvas.getContext('2d');
+    let particles = [];
+
+    function resizeParticles() {
+      pCanvas.width = window.innerWidth;
+      pCanvas.height = window.innerHeight;
+    }
+    resizeParticles();
+    window.addEventListener('resize', resizeParticles);
+
+    class Particle {
+      constructor(x, y, customColor = null) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 9;
+        this.vy = (Math.random() - 0.5) * 9;
+        this.alpha = 1;
+        this.color = customColor || ['#00f3ff', '#ff0055', '#ffe600', '#00ff66'][Math.floor(Math.random() * 4)];
+        this.size = Math.random() * 5 + 2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= 0.025;
+      }
+      draw() {
+        pCtx.save();
+        pCtx.globalAlpha = Math.max(0, this.alpha);
+        pCtx.fillStyle = this.color;
+        pCtx.beginPath();
+        pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        pCtx.fill();
+        pCtx.restore();
+      }
+    }
+
+    function createBurst(x, y, color = null, count = 40) {
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, color));
+      }
+    }
+
+    function animateParticles() {
+      pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].alpha <= 0) particles.splice(i, 1);
+      }
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Petition signature counter
+    let count = 1337;
+    const counterEl = document.getElementById('sign-counter');
+    const btnSign = document.getElementById('btn-sign');
+
+    btnSign.addEventListener('click', () => {
+      count++;
+      counterEl.textContent = count.toLocaleString();
+      playSynthSound('beer');
+      
+      const rect = btnSign.getBoundingClientRect();
+      createBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    });
+
+    const gCanvas = document.getElementById('game-canvas');
+    const gCtx = gCanvas.getContext('2d');
+    const btnStartGame = document.getElementById('btn-start-game');
+
+    const hudScore = document.getElementById('hud-score');
+    const hudBeers = document.getElementById('hud-beers');
+    const hudBombs = document.getElementById('hud-bombs');
+
+    let gameActive = false;
+    let playerX = 250;
+    const playerWidth = 95;
+    const playerHeight = 32;
+    let score = 0;
+    let beersCount = 0;
+    let bombsDodged = 0;
+    let items = [];
+    let keys = {};
+    let isDragging = false;
+
+    // Controls
+    window.addEventListener('keydown', (e) => keys[e.key] = true);
+    window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    // Mouse & Touch Controls
+    function handlePointerMove(clientX) {
+      const rect = gCanvas.getBoundingClientRect();
+      const canvasX = clientX - rect.left;
+      playerX = Math.max(0, Math.min(gCanvas.width - playerWidth, canvasX - playerWidth / 2));
+    }
+
+    gCanvas.addEventListener('mousemove', (e) => {
+      handlePointerMove(e.clientX);
+    });
+
+    gCanvas.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      if (e.touches[0]) handlePointerMove(e.touches[0].clientX);
+    });
+
+    gCanvas.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches[0]) {
+        handlePointerMove(e.touches[0].clientX);
+      }
+    });
+
+    gCanvas.addEventListener('touchend', () => isDragging = false);
+
+    function spawnItem() {
+      if (!gameActive) return;
+      const isBomb = Math.random() < 0.35; // 35% chance bomb, 65% beer
+      items.push({
+        x: Math.random() * (gCanvas.width - 30),
+        y: -20,
+        speed: Math.random() * 2 + 2.5,
+        type: isBomb ? 'bomb' : 'beer'
+      });
+    }
+
+    let spawnInterval = null;
+
+    function triggerScreenShake() {
+      document.body.classList.add('shake');
+      setTimeout(() => document.body.classList.remove('shake'), 300);
+    }
+
+    function updateGame() {
+      if (!gameActive) return;
+
+      // Keyboard movement
+      if ((keys['ArrowLeft'] || keys['a'] || keys['A']) && playerX > 0) playerX -= 6;
+      if ((keys['ArrowRight'] || keys['d'] || keys['D']) && playerX < gCanvas.width - playerWidth) playerX += 6;
+
+      // Clear canvas
+      gCtx.fillStyle = '#070913';
+      gCtx.fillRect(0, 0, gCanvas.width, gCanvas.height);
+
+      // Draw Grid on canvas
+      gCtx.strokeStyle = 'rgba(0,243,255,0.08)';
+      gCtx.lineWidth = 1;
+      for (let x = 0; x < gCanvas.width; x += 30) {
+        gCtx.beginPath(); gCtx.moveTo(x, 0); gCtx.lineTo(x, gCanvas.height); gCtx.stroke();
+      }
+
+      // Draw Player ('CISCO' Neon Tag)
+      const pY = gCanvas.height - playerHeight - 10;
+      
+      // Neon Player Background Glow
+      gCtx.shadowColor = '#00f3ff';
+      gCtx.shadowBlur = 12;
+      gCtx.fillStyle = 'rgba(0, 243, 255, 0.2)';
+      gCtx.strokeStyle = '#00f3ff';
+      gCtx.lineWidth = 2;
+      
+      // Rounded rect for CISCO tag
+      gCtx.beginPath();
+      gCtx.roundRect(playerX, pY, playerWidth, playerHeight, 6);
+      gCtx.fill();
+      gCtx.stroke();
+
+      // CISCO Text
+      gCtx.shadowBlur = 8;
+      gCtx.shadowColor = '#ffe600';
+      gCtx.fillStyle = '#ffe600';
+      gCtx.font = '900 16px Orbitron, sans-serif';
+      gCtx.textAlign = 'center';
+      gCtx.fillText('CISCO', playerX + playerWidth / 2, pY + 22);
+      gCtx.shadowBlur = 0; // reset shadow
+
+      // Render items (Beers 🍺 & Bombs 💣)
+      for (let i = items.length - 1; i >= 0; i--) {
+        let it = items[i];
+        it.y += it.speed;
+
+        gCtx.font = '22px sans-serif';
+        gCtx.textAlign = 'left';
+
+        if (it.type === 'beer') {
+          gCtx.fillText('🍺', it.x, it.y);
+        } else {
+          gCtx.fillText('💣', it.x, it.y);
+        }
+
+        // Collision detection with player banner
+        if (
+          it.y >= pY - 5 &&
+          it.y <= pY + playerHeight &&
+          it.x + 20 >= playerX &&
+          it.x <= playerX + playerWidth
+        ) {
+          const rect = gCanvas.getBoundingClientRect();
+          const impactX = rect.left + it.x;
+          const impactY = rect.top + it.y;
+
+          if (it.type === 'beer') {
+            score += 20;
+            beersCount++;
+            playSynthSound('beer');
+            createBurst(impactX, impactY, '#00ff66', 15);
+          } else {
+            score = Math.max(0, score - 30);
+            playSynthSound('bomb');
+            triggerScreenShake();
+            createBurst(impactX, impactY, '#ff0055', 35);
+          }
+
+          items.splice(i, 1);
+          continue;
+        }
+
+        // Item falls off screen
+        if (it.y > gCanvas.height) {
+          if (it.type === 'bomb') {
+            bombsDodged++;
+          }
+          items.splice(i, 1);
+        }
+      }
+
+      // Update HUD
+      hudScore.textContent = score;
+      hudBeers.textContent = beersCount;
+      hudBombs.textContent = bombsDodged;
+
+      requestAnimationFrame(updateGame);
+    }
+
+    btnStartGame.addEventListener('click', () => {
+      score = 0;
+      beersCount = 0;
+      bombsDodged = 0;
+      items = [];
+      playerX = (gCanvas.width - playerWidth) / 2;
+      gameActive = true;
+      
+      playSynthSound('fanfare');
+
+      if (spawnInterval) clearInterval(spawnInterval);
+      spawnInterval = setInterval(spawnItem, 800);
+
+      updateGame();
+    });
+
+    const termBody = document.getElementById('term-body');
+    const termInput = document.getElementById('term-input');
+
+    function printTermLine(text, type = '') {
+      const div = document.createElement('div');
+      div.className = 'terminal-line ' + type;
+      div.innerHTML = text;
+      termBody.appendChild(div);
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+
+    termInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = termInput.value.trim().toLowerCase();
+        if (!val) return;
+
+        printTermLine(`user@cisco-net:~$ ${termInput.value}`, 'cmd');
+        termInput.value = '';
+
+        switch (val) {
+          case 'help':
+            printTermLine('Comandos disponibles: <span style="color:var(--neon-yellow)">cisco, fiero, sotillo, teleco, ferran, boda, free, clear</span>');
+            break;
+          case 'cisco':
+            printTermLine('Nacido en 2007. Chaval con futuro, inteligente, guapo (al menos lo intenta), lo da todo por los suyos.');
+            break;
+          case 'sotillo':
+            printTermLine('CD Sotillo: Portero durante muchos años. Paradas buenas, partidos malos, muchas victorias pero más derrotas. 0 porterías a 0 (hecho histórico de su carrera).');
+            break;
+          case 'ferran':
+            printTermLine('Pistas Mode: Cuando juega en las pistas se convierte automáticamente en Ferran.');
+            break;
+          case 'teleco':
+            printTermLine('Ingeniero de Teleco (o eso dice él): Menos clases este año que cervezas se bebe un lunes.');
+            break;
+          case 'fiero':
+            printTermLine('VIP de La Central el Fiero: Les ha vomitado y no le han echado aún. Le ponen "La Ventanita" cuando le ven y los cubatas bien cargados para irse contento a casa. Ofertas le deberían dar por tantos días idos.');
+            break;
+          case 'boda':
+            printTermLine('El día de su boda ya sabemos perfectamente dónde ir a buscarle: VIP de La Central el Fiero.');
+            break;
+          case 'free':
+            printTermLine('<span style="color:var(--neon-green)">¡#FREEMYCISCO ACTIVADO CON ÉXITO! LIBERTAD CONCEDIDA.</span>');
+            playSynthSound('fanfare');
+            break;
+          case 'clear':
+            termBody.innerHTML = '';
+            break;
+          default:
+            printTermLine(`Comando no reconocido: '${val}'. Escribe 'help' para ver la lista.`, 'err');
+            break;
+        }
+      }
+    });
+
+    // NFC Modal
+    const btnNfc = document.getElementById('btn-nfc');
+    const modalNfc = document.getElementById('nfc-modal');
+    const btnCloseNfc = document.getElementById('btn-close-nfc');
+
+    btnNfc.addEventListener('click', () => modalNfc.classList.add('active'));
+    btnCloseNfc.addEventListener('click', () => modalNfc.classList.remove('active'));
+    modalNfc.addEventListener('click', (e) => {
+      if (e.target === modalNfc) modalNfc.classList.remove('active');
+    });
+  </script>
+</body>
+</html>
